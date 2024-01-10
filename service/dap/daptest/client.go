@@ -231,7 +231,7 @@ func (c *Client) CheckStopLocation(t *testing.T, thread int, name string, line i
 func (c *Client) InitializeRequest() {
 	request := &dap.InitializeRequest{Request: *c.newRequest("initialize")}
 	request.Arguments = dap.InitializeRequestArguments{
-		AdapterID:                    "go",
+		AdapterID:                    "gop",
 		PathFormat:                   "path",
 		LinesStartAt1:                true,
 		ColumnsStartAt1:              true,
