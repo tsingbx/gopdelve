@@ -34,36 +34,40 @@ func Remove(path string) {
 
 // GoBuild builds non-test files in 'pkgs' with the specified 'buildflags'
 // and writes the output at 'debugname'.
-func GoBuild(debugname string, pkgs []string, buildflags string) error {
+// gopdlv: add `goTool` param
+func GoBuild(goTool, debugname string, pkgs []string, buildflags string) error {
 	args := goBuildArgs(debugname, pkgs, buildflags, false)
-	return gocommandRun("build", args...)
+	return gocommandRun(goTool, "build", args...)
 }
 
 // GoBuildCombinedOutput builds non-test files in 'pkgs' with the specified 'buildflags'
 // and writes the output at 'debugname'.
-func GoBuildCombinedOutput(debugname string, pkgs []string, buildflags interface{}) (string, []byte, error) {
+// gopdlv: add `goTool` param
+func GoBuildCombinedOutput(goTool, debugname string, pkgs []string, buildflags interface{}) (string, []byte, error) {
 	args, err := goBuildArgs2(debugname, pkgs, buildflags, false)
 	if err != nil {
 		return "", nil, err
 	}
-	return gocommandCombinedOutput("build", args...)
+	return gocommandCombinedOutput(goTool, "build", args...)
 }
 
 // GoTestBuild builds test files 'pkgs' with the specified 'buildflags'
 // and writes the output at 'debugname'.
-func GoTestBuild(debugname string, pkgs []string, buildflags string) error {
+// gopdlv: add `goTool` param
+func GoTestBuild(goTool, debugname string, pkgs []string, buildflags string) error {
 	args := goBuildArgs(debugname, pkgs, buildflags, true)
-	return gocommandRun("test", args...)
+	return gocommandRun(goTool, "test", args...)
 }
 
 // GoTestBuildCombinedOutput builds test files 'pkgs' with the specified 'buildflags'
 // and writes the output at 'debugname'.
-func GoTestBuildCombinedOutput(debugname string, pkgs []string, buildflags interface{}) (string, []byte, error) {
+// gopdlv: add `goTool` param
+func GoTestBuildCombinedOutput(goTool, debugname string, pkgs []string, buildflags interface{}) (string, []byte, error) {
 	args, err := goBuildArgs2(debugname, pkgs, buildflags, true)
 	if err != nil {
 		return "", nil, err
 	}
-	return gocommandCombinedOutput("test", args...)
+	return gocommandCombinedOutput(goTool, "test", args...)
 }
 
 func goBuildArgs(debugname string, pkgs []string, buildflags string, isTest bool) []string {
@@ -111,22 +115,27 @@ func goBuildArgs2(debugname string, pkgs []string, buildflags interface{}, isTes
 	return append(args, pkgs...), nil
 }
 
-func gocommandRun(command string, args ...string) error {
-	_, goBuild := gocommandExecCmd(command, args...)
+// gopdlv: add `goTool` param
+func gocommandRun(goTool, command string, args ...string) error {
+	_, goBuild := gocommandExecCmd(goTool, command, args...)
 	goBuild.Stderr = os.Stdout
 	goBuild.Stdout = os.Stderr
 	return goBuild.Run()
 }
 
-func gocommandCombinedOutput(command string, args ...string) (string, []byte, error) {
-	buildCmd, goBuild := gocommandExecCmd(command, args...)
+// gopdlv: add `goTool` param
+func gocommandCombinedOutput(goTool, command string, args ...string) (string, []byte, error) {
+	buildCmd, goBuild := gocommandExecCmd(goTool, command, args...)
 	out, err := goBuild.CombinedOutput()
 	return buildCmd, out, err
 }
 
-func gocommandExecCmd(command string, args ...string) (string, *exec.Cmd) {
+func gocommandExecCmd(goTool, command string, args ...string) (string, *exec.Cmd) {
 	allargs := []string{command}
 	allargs = append(allargs, args...)
-	goBuild := exec.Command("go", allargs...)
-	return strings.Join(append([]string{"go"}, allargs...), " "), goBuild
+	// gopdlv: add `goTool` param
+	// goBuild := exec.Command("go", allargs...)
+	// return strings.Join(append([]string{"go"}, allargs...), " "), goBuild
+	goBuild := exec.Command(goTool, allargs...)
+	return strings.Join(append([]string{goTool}, allargs...), " "), goBuild
 }

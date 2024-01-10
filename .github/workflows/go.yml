@@ -1,0 +1,25 @@
+name: Go
+
+on:
+  push:
+    branches: [ goplus ]
+  pull_request:
+    branches: [ goplus ]
+
+jobs:
+  Test:
+    strategy:
+      matrix:
+        go-version: [1.18.x, 1.21.x]
+        os: [ubuntu-latest, windows-latest, macos-11]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Build
+      run: go build -v ./...

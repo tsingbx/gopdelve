@@ -74,6 +74,10 @@ type LaunchConfig struct {
 	// Default is "debug".
 	Mode string `json:"mode,omitempty"`
 
+	// goxdlv: add `goTool`
+	// Tool is the command to build/test packages. Default is `gop` (not `go`).
+	Tool string `json:"tool,omitempty"`
+
 	// Path to the program folder (or any go file within that folder)
 	// when in `debug` or `test` mode, and to the pre-built binary file
 	// to debug in `exec` mode.
@@ -158,6 +162,13 @@ type LaunchConfig struct {
 	OutputMode string `json:"outputMode,omitempty"`
 
 	LaunchAttachCommonConfig
+}
+
+func (p *LaunchConfig) goTool() string {
+	if p.Tool == "" {
+		return "gop"
+	}
+	return p.Tool
 }
 
 // LaunchAttachCommonConfig is the attributes common in both launch/attach requests.

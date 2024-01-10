@@ -37,7 +37,7 @@ func TestDebugger_LaunchNoExecutablePerm(t *testing.T) {
 	t.Setenv("GOOS", switchOS[runtime.GOOS])
 	exepath := filepath.Join(buildtestdir, debugname)
 	defer os.Remove(exepath)
-	if err := gobuild.GoBuild(debugname, []string{buildtestdir}, fmt.Sprintf("-o %s", exepath)); err != nil {
+	if err := gobuild.GoBuild(goTool, debugname, []string{buildtestdir}, fmt.Sprintf("-o %s", exepath)); err != nil {
 		t.Fatalf("go build error %v", err)
 	}
 	if err := os.Chmod(exepath, 0644); err != nil {
@@ -74,7 +74,7 @@ func TestDebugger_LaunchWithTTY(t *testing.T) {
 	buildtestdir := filepath.Join(fixturesDir, "buildtest")
 	debugname := "debugtty"
 	exepath := filepath.Join(buildtestdir, debugname)
-	if err := gobuild.GoBuild(debugname, []string{buildtestdir}, fmt.Sprintf("-o %s", exepath)); err != nil {
+	if err := gobuild.GoBuild(goTool, debugname, []string{buildtestdir}, fmt.Sprintf("-o %s", exepath)); err != nil {
 		t.Fatalf("go build error %v", err)
 	}
 	defer os.Remove(exepath)

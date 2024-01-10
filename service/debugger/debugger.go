@@ -136,6 +136,10 @@ type Config struct {
 	// TTY for that process.
 	TTY string
 
+	// goxdlv: add `goTool`
+	// Tool is the command to build/test packages. Default is `gop` (not `go`).
+	Tool string
+
 	// Packages contains the packages that we are debugging.
 	Packages []string
 
@@ -158,6 +162,13 @@ type Config struct {
 	DisableASLR bool
 
 	RrOnProcessPid int
+}
+
+func (p *Config) goTool() string {
+	if p.Tool == "" {
+		return "gop"
+	}
+	return p.Tool
 }
 
 // New creates a new Debugger. ProcessArgs specify the commandline arguments for the
@@ -515,12 +526,12 @@ func (d *Debugger) Restart(rerecord bool, pos string, resetArgs bool, newArgs []
 	if rebuild {
 		switch d.config.ExecuteKind {
 		case ExecutingGeneratedFile:
-			err = gobuild.GoBuild(d.processArgs[0], d.config.Packages, d.config.BuildFlags)
+			err = gobuild.GoBuild(d.config.goTool(), d.processArgs[0], d.config.Packages, d.config.BuildFlags)
 			if err != nil {
 				return nil, fmt.Errorf("could not rebuild process: %s", err)
 			}
 		case ExecutingGeneratedTest:
-			err = gobuild.GoTestBuild(d.processArgs[0], d.config.Packages, d.config.BuildFlags)
+			err = gobuild.GoTestBuild(d.config.goTool(), d.processArgs[0], d.config.Packages, d.config.BuildFlags)
 			if err != nil {
 				return nil, fmt.Errorf("could not rebuild process: %s", err)
 			}

@@ -1,4 +1,4 @@
-package main
+package dlv // gopdlv: change application name
 
 // List packages used by _scripts
 

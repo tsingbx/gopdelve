@@ -1,4 +1,4 @@
-package main_test
+package dlv_test // gopdlv: change application name
 
 import (
 	"bufio"

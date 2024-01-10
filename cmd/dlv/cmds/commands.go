@@ -542,6 +542,11 @@ func dapCmd(cmd *cobra.Command, args []string) {
 	os.Exit(status)
 }
 
+// gopdlv: add `goTool`
+func goTool(cmd *cobra.Command) string {
+	return "gop" // TODO
+}
+
 func buildBinary(cmd *cobra.Command, args []string, isTest bool) (string, bool) {
 	outputFlag := cmd.Flag("output").Value.String()
 	var debugname string
@@ -561,9 +566,9 @@ func buildBinary(cmd *cobra.Command, args []string, isTest bool) (string, bool) 
 	}
 
 	if isTest {
-		err = gobuild.GoTestBuild(debugname, args, buildFlags)
+		err = gobuild.GoTestBuild(goTool(cmd), debugname, args, buildFlags)
 	} else {
-		err = gobuild.GoBuild(debugname, args, buildFlags)
+		err = gobuild.GoBuild(goTool(cmd), debugname, args, buildFlags)
 	}
 	if err != nil {
 		if outputFlag == "" {

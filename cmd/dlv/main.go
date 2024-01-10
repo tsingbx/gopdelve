@@ -1,4 +1,4 @@
-package main
+package dlv // gopdlv: change application name
 
 import (
 	"os"
@@ -11,7 +11,7 @@ import (
 // Build is the git sha of this binaries build.
 var Build string
 
-func main() {
+func Main() {
 	if Build != "" {
 		version.DelveVersion.Build = Build
 	}

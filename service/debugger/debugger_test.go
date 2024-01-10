@@ -13,13 +13,17 @@ import (
 	"github.com/go-delve/delve/service/api"
 )
 
+const (
+	goTool = "go" // gopdlv: add `goTool`
+)
+
 func TestDebugger_LaunchNoMain(t *testing.T) {
 	fixturesDir := protest.FindFixturesDir()
 	nomaindir := filepath.Join(fixturesDir, "nomaindir")
 	debugname := "debug"
 	exepath := filepath.Join(nomaindir, debugname)
 	defer os.Remove(exepath)
-	if err := gobuild.GoBuild(debugname, []string{nomaindir}, fmt.Sprintf("-o %s", exepath)); err != nil {
+	if err := gobuild.GoBuild(goTool, debugname, []string{nomaindir}, fmt.Sprintf("-o %s", exepath)); err != nil {
 		t.Fatalf("go build error %v", err)
 	}
 
@@ -51,7 +55,7 @@ func TestDebugger_LaunchInvalidFormat(t *testing.T) {
 	}
 	t.Setenv("GOOS", switchOS[runtime.GOOS])
 	exepath := filepath.Join(buildtestdir, debugname)
-	if err := gobuild.GoBuild(debugname, []string{buildtestdir}, fmt.Sprintf("-o %s", exepath)); err != nil {
+	if err := gobuild.GoBuild(goTool, debugname, []string{buildtestdir}, fmt.Sprintf("-o %s", exepath)); err != nil {
 		t.Fatalf("go build error %v", err)
 	}
 	defer os.Remove(exepath)
@@ -81,7 +85,7 @@ func TestDebugger_LaunchCurrentDir(t *testing.T) {
 			t.Fatalf("error removing executable %v", err)
 		}
 	}()
-	if err := gobuild.GoBuild(debugname, []string{testDir}, fmt.Sprintf("-o %s", exepath)); err != nil {
+	if err := gobuild.GoBuild(goTool, debugname, []string{testDir}, fmt.Sprintf("-o %s", exepath)); err != nil {
 		t.Fatalf("go build error %v", err)
 	}
 

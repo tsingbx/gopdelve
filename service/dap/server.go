@@ -989,9 +989,9 @@ func (s *Session) onLaunchRequest(request *dap.LaunchRequest) {
 
 		switch args.Mode {
 		case "debug":
-			cmd, out, err = gobuild.GoBuildCombinedOutput(args.Output, []string{args.Program}, args.BuildFlags.value)
+			cmd, out, err = gobuild.GoBuildCombinedOutput(args.goTool(), args.Output, []string{args.Program}, args.BuildFlags.value)
 		case "test":
-			cmd, out, err = gobuild.GoTestBuildCombinedOutput(args.Output, []string{args.Program}, args.BuildFlags.value)
+			cmd, out, err = gobuild.GoTestBuildCombinedOutput(args.goTool(), args.Output, []string{args.Program}, args.BuildFlags.value)
 		}
 		args.DlvCwd, _ = filepath.Abs(args.DlvCwd)
 		s.config.log.Debugf("building from %q: [%s]", args.DlvCwd, cmd)
