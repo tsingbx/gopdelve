@@ -1405,7 +1405,7 @@ func handlerPathAtFilter(filePath string) string {
 	return filePath
 }
 
-var logConsole = false
+var logConsole = true
 
 func (s *Session) handlerGopFilePath(filePath string, inSources []string) string {
 	if !gopFileNameFilter(filePath) {
@@ -1425,6 +1425,7 @@ func (s *Session) handlerGopFilePath(filePath string, inSources []string) string
 	sort.Slice(sources, func(i, j int) bool {
 		return strings.Count(sources[i], "/") > strings.Count(sources[j], "/")
 	})
+	originFilePath := filePath
 	filePath = handlerPathAtFilter(filePath)
 	filePath = strings.ToLower(filepath.ToSlash(filePath))
 	if logConsole {
@@ -1442,7 +1443,7 @@ func (s *Session) handlerGopFilePath(filePath string, inSources []string) string
 				s.logToConsole("relPath:" + relPath + " ok:" + fmt.Sprintf("%v", ok))
 			}
 			if ok {
-				s.sourcesChece[source] = filePath
+				s.sourcesChece[source] = originFilePath
 				return source
 			}
 		}
