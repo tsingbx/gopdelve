@@ -166,6 +166,8 @@ type Session struct {
 
 	// preTerminatedWG the WaitGroup that needs to wait before sending a terminated event.
 	preTerminatedWG sync.WaitGroup
+
+	sourcesChece map[string]string
 }
 
 // Config is all the information needed to start the debugger, handle
@@ -969,6 +971,7 @@ func (s *Session) onLaunchRequest(request *dap.LaunchRequest) {
 
 	// Prepare the debug executable filename, building it if necessary
 	debugbinary := args.Program
+
 	if args.Mode == "debug" || args.Mode == "test" {
 		deleteOnError := false
 		if args.Output == "" {
@@ -1378,6 +1381,109 @@ func (s *Session) isNoDebug() bool {
 	return s.noDebugProcess != nil
 }
 
+// filter go+ file: .gop .spx ....
+func gopFileNameFilter(file string) bool {
+	fileType := filepath.Ext(file)
+	switch fileType {
+	// old go+ classfile
+	case ".gop", ".spx", ".gmx", ".rdx":
+		return true
+		// gop >= v1.2.0-pre.1 _[class].gox
+	case ".gox":
+		return true
+	}
+	return false
+}
+func handlerPathAtFilter(filePath string) string {
+	atIndex := strings.Index(filePath, "@")
+	if atIndex > 0 {
+		versionEndIndex := strings.Index(filePath[atIndex:], "/")
+		if versionEndIndex > 0 {
+			filePath = filePath[:atIndex] + filePath[atIndex+versionEndIndex:]
+		}
+	}
+	return filePath
+}
+
+var logConsole = false
+
+func (s *Session) handlerGopFilePath(filePath string, inSources []string) string {
+	if !gopFileNameFilter(filePath) {
+		return filePath
+	}
+	if s.sourcesChece == nil {
+		s.sourcesChece = make(map[string]string)
+	}
+	sources := []string{}
+	for _, source := range inSources {
+		if !gopFileNameFilter(source) {
+			continue
+		}
+		source = strings.ToLower(filepath.ToSlash(source))
+		sources = append(sources, source)
+	}
+	sort.Slice(sources, func(i, j int) bool {
+		return strings.Count(sources[i], "/") > strings.Count(sources[j], "/")
+	})
+	filePath = handlerPathAtFilter(filePath)
+	filePath = strings.ToLower(filepath.ToSlash(filePath))
+	if logConsole {
+		s.logToConsole("filePath:" + filePath)
+	}
+	for _, source := range sources {
+		if lastIdx := strings.LastIndex(filePath, source); lastIdx != -1 {
+			dirPath := filePath[:lastIdx]
+			if logConsole {
+				s.logToConsole("source:" + source)
+				s.logToConsole("dirPath:" + dirPath)
+			}
+			relPath, ok := strings.CutPrefix(filePath, dirPath)
+			if logConsole {
+				s.logToConsole("relPath:" + relPath + " ok:" + fmt.Sprintf("%v", ok))
+			}
+			if ok {
+				s.sourcesChece[source] = filePath
+				return source
+			}
+		}
+	}
+	return filePath
+	/*
+		if runtime.GOOS == "windows" {
+			// Accept fileName which is case-insensitive and slash-insensitive match
+			filePath = strings.ToLower(filepath.ToSlash(filePath))
+		}
+		lastI := strings.LastIndex(filePath, "/")
+		if lastI == -1 {
+			return filePath
+		}
+		fileName := filePath[lastI+1:]
+		isGopSources := []string{}
+		for _, v := range sources {
+			if strings.LastIndex(v, fileName) != -1 {
+				if runtime.GOOS == "windows" {
+					v = filepath.ToSlash(strings.ToLower(v))
+				}
+				isGopSources = append(isGopSources, v)
+			}
+		}
+		sort.Slice(isGopSources, func(i, j int) bool {
+			return strings.Count(isGopSources[i], "/") > strings.Count(isGopSources[j], "/")
+		})
+		if s.sourcesChece == nil {
+			s.sourcesChece = make(map[string]string)
+		}
+		sourceFilePath := filePath
+		filePath = handlerPathAtFilter(filePath)
+		for _, v := range isGopSources {
+			if strings.Contains(filePath, v) {
+				s.sourcesChece[v] = sourceFilePath
+				return v
+			}
+		}
+		return filePath*/
+}
+
 func (s *Session) onSetBreakpointsRequest(request *dap.SetBreakpointsRequest) {
 	if request.Arguments.Source.Path == "" {
 		s.sendErrorResponse(request.Request, UnableToSetBreakpoints, "Unable to set or clear breakpoints", "empty file path")
@@ -1407,6 +1513,12 @@ func (s *Session) onSetBreakpointsRequest(request *dap.SetBreakpointsRequest) {
 	})
 
 	response := &dap.SetBreakpointsResponse{Response: *newResponse(request.Request)}
+	for _, b := range breakpoints {
+		if b.Source == nil {
+			continue
+		}
+		b.Source.Path = request.Arguments.Source.Path
+	}
 	response.Body.Breakpoints = breakpoints
 
 	s.send(response)
@@ -3876,6 +3988,17 @@ func (msg *logMessage) evaluate(s *Session, goid int64) string {
 }
 
 func (s *Session) toClientPath(path string) string {
+	abPath := s.sourcesChece[path]
+	if len(abPath) == 0 && gopFileNameFilter(path) {
+		for k, v := range s.sourcesChece {
+			i := strings.LastIndex(v, k)
+			path = v[:i] + path
+			break
+		}
+	}
+	if len(abPath) > 0 {
+		path = abPath
+	}
 	if len(s.args.substitutePathServerToClient) == 0 {
 		return path
 	}
@@ -3887,6 +4010,7 @@ func (s *Session) toClientPath(path string) string {
 }
 
 func (s *Session) toServerPath(path string) string {
+	path = s.handlerGopFilePath(path, s.debugger.Target().BinInfo().Sources)
 	if len(s.args.substitutePathClientToServer) == 0 {
 		return path
 	}
