@@ -429,6 +429,18 @@ func otherFiles(p *jsonPackage) [][]string {
 	return [][]string{p.CFiles, p.CXXFiles, p.MFiles, p.HFiles, p.FFiles, p.SFiles, p.SwigFiles, p.SwigCXXFiles, p.SysoFiles}
 }
 
+func IsGopFileExt(ext string) bool {
+	switch ext {
+	// old go+ classfile
+	case ".gop", ".spx", ".gmx", ".rdx":
+		return true
+		// gop >= v1.2.0-pre.1 _[class].gox
+	case ".gox":
+		return true
+	}
+	return false
+}
+
 // createDriverResponse uses the "go list" command to expand the pattern
 // words and return a response for the specified packages.
 func (state *golistState) createDriverResponse(words ...string) (*driverResponse, error) {
@@ -607,7 +619,7 @@ func (state *golistState) createDriverResponse(words ...string) (*driverResponse
 		if len(pkg.CompiledGoFiles) > 0 {
 			out := pkg.CompiledGoFiles[:0]
 			for _, f := range pkg.CompiledGoFiles {
-				if ext := filepath.Ext(f); ext != ".go" && ext != "" { // ext == "" means the file is from the cache, so probably cgo-processed file
+				if ext := filepath.Ext(f); ext != ".go" && ext != "" && !IsGopFileExt(ext) { // ext == "" means the file is from the cache, so probably cgo-processed file
 					continue
 				}
 				out = append(out, f)
@@ -1154,7 +1166,8 @@ func (state *golistState) writeOverlays() (filename string, cleanup func(), err 
 
 func containsGoFile(s []string) bool {
 	for _, f := range s {
-		if strings.HasSuffix(f, ".go") {
+		ext := filepath.Ext(f)
+		if strings.HasSuffix(f, ".go") && IsGopFileExt(ext) {
 			return true
 		}
 	}

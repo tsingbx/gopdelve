@@ -1407,10 +1407,20 @@ func handlerPathAtFilter(filePath string) string {
 
 var logConsole = true
 
-func (s *Session) handlerGopFilePath(filePath string, inSources []string) string {
+func (s *Session) handlerGopFilePath(filePath string) string {
 	if !gopFileNameFilter(filePath) {
 		return filePath
 	}
+	inSources := s.debugger.Target().BinInfo().Sources
+	//PackagesBuildInfo := s.debugger.Target().BinInfo().ListPackagesBuildInfo(true)
+	if logConsole {
+		/*
+			for _, PackageBuildInfo := range PackagesBuildInfo {
+				s.logToConsole(fmt.Sprintf("PackageBuildInfo(ImportPath:%s,DirectoryPath:%s)", PackageBuildInfo.ImportPath, PackageBuildInfo.DirectoryPath))
+			}*/
+		s.logToConsole(fmt.Sprintf("PackageMap:%v", s.debugger.Target().BinInfo().PackageMap))
+	}
+
 	if s.sourcesChece == nil {
 		s.sourcesChece = make(map[string]string)
 	}
@@ -4011,7 +4021,7 @@ func (s *Session) toClientPath(path string) string {
 }
 
 func (s *Session) toServerPath(path string) string {
-	path = s.handlerGopFilePath(path, s.debugger.Target().BinInfo().Sources)
+	path = s.handlerGopFilePath(path)
 	if len(s.args.substitutePathClientToServer) == 0 {
 		return path
 	}

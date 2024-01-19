@@ -2725,6 +2725,18 @@ type PackageBuildInfo struct {
 	Files         map[string]struct{}
 }
 
+func IsGopFileExt(ext string) bool {
+	switch ext {
+	// old go+ classfile
+	case ".gop", ".spx", ".gmx", ".rdx":
+		return true
+		// gop >= v1.2.0-pre.1 _[class].gox
+	case ".gox":
+		return true
+	}
+	return false
+}
+
 // ListPackagesBuildInfo returns the list of packages used by the program along with
 // the directory where each package was compiled and optionally the list of
 // files constituting the package.
@@ -2739,7 +2751,7 @@ func (bi *BinaryInfo) ListPackagesBuildInfo(includeFiles bool) []*PackageBuildIn
 		ip := strings.ReplaceAll(cu.name, "\\", "/")
 		if _, ok := m[ip]; !ok {
 			path := cu.lineInfo.FirstFile()
-			if ext := filepath.Ext(path); ext != ".go" && ext != ".s" {
+			if ext := filepath.Ext(path); ext != ".go" && ext != ".s" && !IsGopFileExt(ext) {
 				continue
 			}
 			dp := filepath.Dir(path)

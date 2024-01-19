@@ -652,7 +652,7 @@ func next(dbp *Target, stepInto, inlinedStepOut bool) error {
 	}()
 
 	ext := filepath.Ext(topframe.Current.File)
-	csource := ext != ".go" && ext != ".s"
+	csource := ext != ".go" && ext != ".s" && !IsGopFileExt(ext)
 	var regs Registers
 	if selg != nil && selg.Thread != nil {
 		regs, err = selg.Thread.Registers()
