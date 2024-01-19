@@ -553,9 +553,6 @@ func joinPath(to, rest string) string {
 
 // SubstitutePath applies the specified path substitution rules to path.
 func SubstitutePath(path string, rules [][2]string) string {
-	if filepath.Ext(path) == ".go" {
-		return path
-	}
 	// Look for evidence that we are dealing with windows somewhere, if we are use case-insensitive matching
 	caseInsensitive := windowsAbsPath(path)
 	if !caseInsensitive {
