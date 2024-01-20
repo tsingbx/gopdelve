@@ -169,7 +169,7 @@ func BuildFixture(name string, flags BuildFlags) Fixture {
 		buildFlags = append(buildFlags, name)
 	}
 
-	cmd := exec.Command("go", buildFlags...)
+	cmd := exec.Command("gop", buildFlags...)
 	cmd.Dir = dir
 	if os.Getenv("CI") != "" {
 		cmd.Env = os.Environ()
