@@ -106,9 +106,11 @@ func BuildFixture(name string, flags BuildFlags) Fixture {
 	}
 
 	fixturesDir := FindFixturesDir()
-
+	if name[0] == '/' {
+		fixturesDir = ""
+	}
 	dir := fixturesDir
-	path := filepath.Join(fixturesDir, name+".go")
+	path := filepath.Join(fixturesDir, name)
 	if name[len(name)-1] == '/' {
 		dir = filepath.Join(dir, name)
 		path = ""
@@ -164,7 +166,7 @@ func BuildFixture(name string, flags BuildFlags) Fixture {
 		}
 	}
 	if path != "" {
-		buildFlags = append(buildFlags, name+".go")
+		buildFlags = append(buildFlags, name)
 	}
 
 	cmd := exec.Command("go", buildFlags...)

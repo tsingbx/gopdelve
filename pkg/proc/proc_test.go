@@ -333,6 +333,37 @@ func TestStep(t *testing.T) {
 		}
 	})
 }
+func getPackageDir(pkg string) string {
+	cmd := exec.Command("go", "list", "-f", "{{.Dir}}", pkg)
+	out, err := cmd.Output()
+	if err != nil {
+		return "."
+	}
+	return string(bytes.TrimSpace(out))
+}
+func TestProcSource(t *testing.T) {
+	protest.AllowRecording(t)
+	withTestProcess("/Users/xlj/Documents/GitHub/tsingbx-delve/_fixtures/goptest/", t, func(p *proc.Target, grp *proc.TargetGroup, fixture protest.Fixture) {
+		packages := p.BinInfo().ListPackagesBuildInfo(true)
+		for _, v := range packages {
+			if v.ImportPath == "main" {
+				t.Log("v.ImportPath", v.ImportPath)
+				t.Log("v.DirectoryPath", v.DirectoryPath)
+				t.Log("files [")
+				for file, _ := range v.Files {
+					t.Logf("%s,", file)
+				}
+				t.Log("]")
+			}
+		}
+		/*
+			for _, v := range p.BinInfo().Sources {
+				if strings.Contains(v, ".gop") {
+					t.Log(v)
+				}
+			}*/
+	})
+}
 
 func TestBreakpoint(t *testing.T) {
 	protest.AllowRecording(t)
