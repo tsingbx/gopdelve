@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -87,6 +88,25 @@ func TempFile(name string) string {
 	r := make([]byte, 4)
 	rand.Read(r)
 	return filepath.Join(os.TempDir(), fmt.Sprintf("%s.%s", name, hex.EncodeToString(r)))
+}
+
+func NewLogger(logDir string, loggerID string, clear bool) (loger *log.Logger, f *os.File, err error) {
+	if loggerID == "" {
+		loggerID = "t"
+	}
+	LOGFILE := filepath.Join(logDir, loggerID+".log")
+	if clear {
+		f, err = os.OpenFile(LOGFILE, os.O_CREATE|os.O_WRONLY, 0644)
+	} else {
+		f, err = os.OpenFile(LOGFILE, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	}
+	if err != nil {
+		fmt.Println(err)
+		return nil, nil, err
+	}
+	loger = log.New(f, loggerID+":", log.Ltime)
+	loger.Println("start ==>")
+	return
 }
 
 // BuildFixture will compile the fixture 'name' using the provided build flags.

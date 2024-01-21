@@ -10,7 +10,6 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -343,29 +342,10 @@ func getPackageDir(pkg string) string {
 	return string(bytes.TrimSpace(out))
 }
 
-func NewLogger(logDir string, loggerID string, clear bool) (loger *log.Logger, f *os.File, err error) {
-	if loggerID == "" {
-		loggerID = "t"
-	}
-	LOGFILE := filepath.Join(logDir, loggerID+".log")
-	if clear {
-		f, err = os.OpenFile(LOGFILE, os.O_CREATE|os.O_WRONLY, 0644)
-	} else {
-		f, err = os.OpenFile(LOGFILE, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	}
-	if err != nil {
-		fmt.Println(err)
-		return nil, nil, err
-	}
-	loger = log.New(f, loggerID+":", log.Ltime)
-	loger.Println("start ==>")
-	return
-}
-
 func TestProcSource(t *testing.T) {
 	protest.AllowRecording(t)
 	withTestProcess("/Users/xlj/Documents/GitHub/tsingbx-delve/_fixtures/goptest/", t, func(p *proc.Target, grp *proc.TargetGroup, fixture protest.Fixture) {
-		lg, f, _ := NewLogger("/Users/xlj/Documents/GitHub/tsingbx-delve/_fixtures/goptest/", "", true)
+		lg, f, _ := protest.NewLogger("/Users/xlj/Documents/GitHub/tsingbx-delve/_fixtures/goptest/", "", true)
 		defer f.Close()
 		packages := p.BinInfo().ListPackagesBuildInfo(true)
 		for _, v := range packages {
