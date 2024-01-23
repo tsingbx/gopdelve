@@ -228,6 +228,125 @@ func BuildFixture(name string, flags BuildFlags) Fixture {
 	return fixtures[fk]
 }
 
+// TestBuildFixture will compile the fixture 'name' using the provided test build flags.
+func TestBuildFixture(name string, flags BuildFlags) Fixture {
+	if !runningWithFixtures {
+		panic("RunTestsWithFixtures not called")
+	}
+	fk := fixtureKey{name, flags}
+	if f, ok := fixtures[fk]; ok {
+		return f
+	}
+
+	if flags&EnableCGOOptimization == 0 {
+		if os.Getenv("CI") == "" || os.Getenv("CGO_CFLAGS") == "" {
+			os.Setenv("CGO_CFLAGS", "-O0 -g")
+		}
+	}
+
+	fixturesDir := FindFixturesDir()
+	if name[0] == '/' {
+		fixturesDir = ""
+	}
+	dir := fixturesDir
+	path := filepath.Join(fixturesDir, name)
+	if name[len(name)-1] == '/' {
+		dir = filepath.Join(dir, name)
+		path = ""
+		name = name[:len(name)-1]
+	}
+	tmpfile := TempFile(name)
+
+	buildFlags := []string{"test"}
+	var ver goversion.GoVersion
+	if ver, _ = goversion.Parse(runtime.Version()); runtime.GOOS == "windows" && ver.Major > 0 && !ver.AfterOrEqual(goversion.GoVersion{Major: 1, Minor: 9, Rev: -1}) {
+		// Work-around for https://github.com/golang/go/issues/13154
+		buildFlags = append(buildFlags, "-ldflags=-linkmode internal")
+	}
+	ldflagsv := []string{}
+	if flags&LinkStrip != 0 {
+		ldflagsv = append(ldflagsv, "-s")
+	}
+	if flags&LinkDisableDWARF != 0 {
+		ldflagsv = append(ldflagsv, "-w")
+	}
+	buildFlags = append(buildFlags, "-ldflags="+strings.Join(ldflagsv, " "))
+	gcflagsv := []string{}
+	if flags&EnableInlining == 0 {
+		gcflagsv = append(gcflagsv, "-l")
+	}
+	if flags&EnableOptimization == 0 {
+		gcflagsv = append(gcflagsv, "-N")
+	}
+	var gcflags string
+	if flags&AllNonOptimized != 0 {
+		gcflags = "-gcflags=all=" + strings.Join(gcflagsv, " ")
+	} else {
+		gcflags = "-gcflags=" + strings.Join(gcflagsv, " ")
+	}
+	buildFlags = append(buildFlags, gcflags, "-o", tmpfile)
+	if *EnableRace {
+		buildFlags = append(buildFlags, "-race")
+	}
+	if flags&BuildModePIE != 0 {
+		buildFlags = append(buildFlags, "-buildmode=pie")
+	} else {
+		buildFlags = append(buildFlags, "-buildmode=exe")
+	}
+	if flags&BuildModePlugin != 0 {
+		buildFlags = append(buildFlags, "-buildmode=plugin")
+	}
+	if flags&BuildModeExternalLinker != 0 {
+		buildFlags = append(buildFlags, "-ldflags=-linkmode=external")
+	}
+	if ver.IsDevel() || ver.AfterOrEqual(goversion.GoVersion{Major: 1, Minor: 11, Rev: -1}) {
+		if flags&EnableDWZCompression != 0 {
+			buildFlags = append(buildFlags, "-ldflags=-compressdwarf=false")
+		}
+	}
+	if path != "" {
+		buildFlags = append(buildFlags, name)
+	}
+
+	cmd := exec.Command("gop", buildFlags...)
+	cmd.Dir = dir
+	if os.Getenv("CI") != "" {
+		cmd.Env = os.Environ()
+	}
+
+	// Build the test binary
+	if out, err := cmd.CombinedOutput(); err != nil {
+		fmt.Printf("Error compiling %s: %s\n", path, err)
+		fmt.Printf("%s\n", string(out))
+		os.Exit(1)
+	}
+
+	if flags&EnableDWZCompression != 0 {
+		cmd := exec.Command("dwz", tmpfile)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			if regexp.MustCompile(`dwz: Section offsets in (.*?) not monotonically increasing`).FindString(string(out)) == "" {
+				fmt.Printf("Error running dwz on %s: %s\n", tmpfile, err)
+				fmt.Printf("%s\n", string(out))
+				os.Exit(1)
+			}
+		}
+	}
+
+	source, _ := filepath.Abs(path)
+	source = filepath.ToSlash(source)
+	sympath, err := filepath.EvalSymlinks(source)
+	if err == nil {
+		source = strings.ReplaceAll(sympath, "\\", "/")
+	}
+
+	absdir, _ := filepath.Abs(dir)
+
+	fixture := Fixture{Name: name, Path: tmpfile, Source: source, BuildDir: absdir}
+
+	fixtures[fk] = fixture
+	return fixtures[fk]
+}
+
 // RunTestsWithFixtures will pre-compile test fixtures before running test
 // methods. Test binaries are deleted before exiting.
 func RunTestsWithFixtures(m *testing.M) int {

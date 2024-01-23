@@ -14,6 +14,21 @@ func ptrSizeByRuntimeArch() int {
 	return int(unsafe.Sizeof(uintptr(0)))
 }
 
+func TestDwarfCompileUnitName(t *testing.T) {
+	// Tests that we correctly read the version of compilation units
+	fixture := protest.TestBuildFixture("goptest/", 0)
+	bi := NewBinaryInfo(runtime.GOOS, runtime.GOARCH)
+
+	lg, f, _ := protest.NewLogger("/Users/xlj/Documents/GitHub/tsingbx-delve/_fixtures/goptest/", "", true)
+	defer f.Close()
+	// Use a fake entry point so LoadBinaryInfo does not error in case the binary is PIE.
+	const fakeEntryPoint = 1
+	assertNoError(bi.LoadBinaryInfo(fixture.Path, fakeEntryPoint, nil), t, "LoadBinaryInfo")
+	for _, cu := range bi.Images[0].compileUnits {
+		lg.Println("cuname:" + cu.name)
+	}
+}
+
 func TestIssue554(t *testing.T) {
 	// unsigned integer overflow in proc.(*memCache).contains was
 	// causing it to always return true for address 0xffffffffffffffff
