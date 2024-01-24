@@ -14,6 +14,18 @@ func ptrSizeByRuntimeArch() int {
 	return int(unsafe.Sizeof(uintptr(0)))
 }
 
+func TestBininfo(t *testing.T) {
+	bi := NewBinaryInfo(runtime.GOOS, runtime.GOARCH)
+	lg, f, _ := protest.NewLogger("/Users/xlj/Documents/GitHub/tsingbx-delve/_fixtures/goptest/", "", true)
+	defer f.Close()
+	path := protest.FindGopBin("gopbin/")
+	const fakeEntryPoint = 1
+	assertNoError(bi.LoadBinaryInfo(path, fakeEntryPoint, nil), t, "LoadBinaryInfo")
+	for _, cu := range bi.Images[0].compileUnits {
+		lg.Println("cuname:" + cu.name)
+	}
+}
+
 func TestDwarfCompileUnitName(t *testing.T) {
 	// Tests that we correctly read the version of compilation units
 	fixture := protest.TestBuildFixture("goptest/", 0)

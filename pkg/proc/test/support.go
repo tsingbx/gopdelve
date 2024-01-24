@@ -228,6 +228,19 @@ func BuildFixture(name string, flags BuildFlags) Fixture {
 	return fixtures[fk]
 }
 
+func FindGopBin(name string) string {
+	fixturesDir := FindFixturesDir()
+	dir := fixturesDir
+	if name[len(name)-1] == '/' {
+		dir = filepath.Join(dir, name)
+		name = "__debug_bin"
+	} else {
+		dir += filepath.Join(dir, "gopbin/")
+	}
+	path := filepath.Join(dir, name)
+	return path
+}
+
 // TestBuildFixture will compile the fixture 'name' using the provided test build flags.
 func TestBuildFixture(name string, flags BuildFlags) Fixture {
 	if !runningWithFixtures {
